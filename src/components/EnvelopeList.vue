@@ -74,8 +74,10 @@ export default {
 			loadingMore: false,
 			refreshing: false,
 			shortkeys: {
-				del: ['del'],
-				flag: ['s'],
+                select:['a'],	// [a]dd to selected
+                deselectAll:['d'],	// deselect all envelopes
+                del: ['del'],
+                flag: ['s'],
 				next: ['arrowright'],
 				prev: ['arrowleft'],
 				refresh: ['r'],
@@ -158,7 +160,7 @@ export default {
 		},
 		handleShortcut(e) {
 			const envelopes = this.envelopes
-			const currentUid = this.$route.params.messageUid
+            const currentUid = this.$route.params.messageUid
 
 			if (!currentUid) {
 				Logger.debug('ignoring shortcut: no envelope selected')
@@ -175,6 +177,30 @@ export default {
 			const idx = envelopes.indexOf(env)
 
 			switch (e.srcKey) {
+				case 'deselectAll':
+                    let toUnselect = envelopes.filter(e => e.flags.selected);
+                    for (let env of toUnselect){
+                        Logger.debug('unselecting', {env})
+                        this.$store
+                            .dispatch('toggleEnvelopeSelected', env)
+                            .catch(error => Logger.error('could not unselect envelope', {env, error}))
+                    }
+				    break;
+				case 'select':
+                    let selectedEnv = envelopes[idx];
+                    if (!selectedEnv) {
+                        Logger.debug('ignoring shortcut: head or tail of envelope list reached', {
+                            envelopes,
+                            idx,
+                            srcKey: e.srcKey,
+                        })
+                        return
+                    }
+                    Logger.debug('Select/unselect envelope via shortkey', {env})
+                    this.$store
+                        .dispatch('toggleEnvelopeSelected', env)
+                        .catch(error => Logger.error('could not flag envelope via shortkey', {env, error}))
+				    break;
 				case 'next':
 				case 'prev':
 					let next
@@ -205,32 +231,48 @@ export default {
 					})
 					break
 				case 'del':
-					Logger.debug('deleting', {env})
-					this.$store
-						.dispatch('deleteMessage', env)
-						.catch(error => Logger.error('could not delete envelope', {env, error}))
-
+				    let toDelete = envelopes.filter(e => e.flags.selected);
+				    if(toDelete.length === 0){
+                        toDelete.push(env);
+					}
+				    for (let env of toDelete){
+                        Logger.debug('deleting', {env})
+                        this.$store
+                            .dispatch('deleteMessage', env)
+                            .catch(error => Logger.error('could not delete envelope', {env, error}))
+					}
 					break
 				case 'flag':
-					Logger.debug('flagging envelope via shortkey', {env})
-					this.$store
-						.dispatch('toggleEnvelopeFlagged', env)
-						.catch(error => Logger.error('could not flag envelope via shortkey', {env, error}))
+                    let toFlag = envelopes.filter(e => e.flags.selected);
+                    if(toFlag.length === 0){
+                        toFlag.push(env);
+                    }
+                    for (let env of toFlag){
+                        Logger.debug('flagging envelope via shortkey', {env})
+						this.$store
+							.dispatch('toggleEnvelopeFlagged', env)
+							.catch(error => Logger.error('could not flag envelope via shortkey', {env, error}))
+                    }
 					break
 				case 'refresh':
 					Logger.debug('syncing envelopes via shortkey')
 					if (!this.refreshing) {
 						this.sync()
 					}
-
 					break
 				case 'unseen':
-					Logger.debug('marking message as seen/unseen via shortkey', {env})
-					this.$store
-						.dispatch('toggleEnvelopeSeen', env)
-						.catch(error =>
-							Logger.error('could not mark envelope as seen/unseen via shortkey', {env, error})
-						)
+                    let toUnSee = envelopes.filter(e => e.flags.selected);
+                    if(toUnSee.length === 0){
+                        toUnSee.push(env);
+                    }
+                    for (let env of toUnSee) {
+                        Logger.debug('marking message as seen/unseen via shortkey', {env})
+                        this.$store
+                            .dispatch('toggleEnvelopeSeen', env)
+                            .catch(error =>
+                                Logger.error('could not mark envelope as seen/unseen via shortkey', {env, error})
+                            )
+                    }
 					break
 				default:
 					Logger.warn('shortcut ' + e.srcKey + ' is unknown. ignoring.')

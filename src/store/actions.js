@@ -464,6 +464,26 @@ export default {
 			})
 		})
 	},
+	toggleEnvelopeSelected({commit, getters}, envelope) {
+		// Change immediately and switch back on error
+		const oldState = envelope.flags.selected
+		commit('flagEnvelope', {
+			envelope,
+			flag: 'selected',
+			value: !oldState,
+		})
+
+		setEnvelopeFlag(envelope.accountId, envelope.folderId, envelope.id, 'selected', !oldState).catch(e => {
+			console.error('could not toggle message selected state', e)
+
+			// Revert change
+			commit('flagEnvelope', {
+				envelope,
+				flag: 'selected',
+				value: oldState,
+			})
+		})
+	},
 	fetchMessage({commit}, uid) {
 		const {accountId, folderId, id} = parseUid(uid)
 		return fetchMessage(accountId, folderId, id).then(message => {

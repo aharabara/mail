@@ -10,7 +10,7 @@
 			:data-starred="data.flags.flagged ? 'true' : 'false'"
 			@click.prevent="onToggleFlagged"
 		></div>
-		<div class="app-content-list-item-icon">
+		<div class="app-content-list-item-icon" :class="{ 'mail-message-selected': data.flags.selected}">
 			<Avatar :display-name="addresses" :email="avatarEmail" />
 		</div>
 		<div class="app-content-list-item-line-one" :title="addresses">
@@ -149,6 +149,11 @@ export default {
 	width: 2px;
 	height: 69px;
 	z-index: 1;
+}
+
+.mail-message-selected {
+	transition: all 1s;
+	filter: opacity(0.4);
 }
 
 .app-content-list-item.unseen {
